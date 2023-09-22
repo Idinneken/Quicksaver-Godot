@@ -1,0 +1,17 @@
+C:\Program Files\Godot\Projects\.godot\mono\temp\bin\Debug\Quicksaver.deps.json
+C:\Program Files\Godot\Projects\.godot\mono\temp\bin\Debug\Quicksaver.runtimeconfig.json
+C:\Program Files\Godot\Projects\.godot\mono\temp\bin\Debug\Quicksaver.dll
+C:\Program Files\Godot\Projects\.godot\mono\temp\bin\Debug\Quicksaver.pdb
+C:\Program Files\Godot\Projects\.godot\mono\temp\bin\Debug\GodotSharp.dll
+C:\Program Files\Godot\Projects\.godot\mono\temp\bin\Debug\GodotSharpEditor.dll
+C:\Program Files\Godot\Projects\.godot\mono\temp\obj\Debug\Quicksaver.csproj.AssemblyReference.cache
+C:\Program Files\Godot\Projects\.godot\mono\temp\obj\Debug\Quicksaver.GeneratedMSBuildEditorConfig.editorconfig
+C:\Program Files\Godot\Projects\.godot\mono\temp\obj\Debug\Quicksaver.AssemblyInfoInputs.cache
+C:\Program Files\Godot\Projects\.godot\mono\temp\obj\Debug\Quicksaver.AssemblyInfo.cs
+C:\Program Files\Godot\Projects\.godot\mono\temp\obj\Debug\Quicksaver.csproj.CoreCompileInputs.cache
+C:\Program Files\Godot\Projects\.godot\mono\temp\obj\Debug\Quicksaver.csproj.CopyComplete
+C:\Program Files\Godot\Projects\.godot\mono\temp\obj\Debug\Quicksaver.dll
+C:\Program Files\Godot\Projects\.godot\mono\temp\obj\Debug\refint\Quicksaver.dll
+C:\Program Files\Godot\Projects\.godot\mono\temp\obj\Debug\Quicksaver.pdb
+C:\Program Files\Godot\Projects\.godot\mono\temp\obj\Debug\Quicksaver.genruntimeconfig.cache
+C:\Program Files\Godot\Projects\.godot\mono\temp\obj\Debug\ref\Quicksaver.dll
