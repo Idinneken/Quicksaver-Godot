@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "86SUjeM/Xm6pFtJ6HNZ1eWhGV4JCAHpNS8mnzTy2wWdSskjShX7PzrQWD/DP2j6w62FD96Wo3UwBt8BTxSb+Wg==",
+  "dgSpecHash": "Rg5mSADjmHEt2aQ360jisiBVv4FSGCd6I8KwO4iqk5nR32R3yt35czs9wvaaPiEoMLncEcFiunSDJiGauSnliQ==",
   "success": true,
-  "projectFilePath": "C:\\Program Files\\Godot\\Projects\\Quicksaver.csproj",
+  "projectFilePath": "C:\\Github Repos\\Godot\\Quicksaver\\Quicksaver.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\georg\\.nuget\\packages\\godot.sourcegenerators\\4.1.1\\godot.sourcegenerators.4.1.1.nupkg.sha512",
     "C:\\Users\\georg\\.nuget\\packages\\godotsharp\\4.1.1\\godotsharp.4.1.1.nupkg.sha512",

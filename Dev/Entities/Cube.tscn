@@ -5,7 +5,7 @@
 [node name="Node3D" type="Node3D"]
 
 [node name="CSGBox3D" type="CSGBox3D" parent="."]
-use_collision = true
+size = Vector3(3.69371, 1, 1)
 
 [node name="RigidBody3D" type="RigidBody3D" parent="CSGBox3D"]
 

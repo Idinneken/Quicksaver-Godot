@@ -11,8 +11,13 @@ config_version=5
 [application]
 
 config/name="Quicksaver"
+run/main_scene="res://dev/levels/2ndScene.tscn"
 config/features=PackedStringArray("4.1", "C#", "Forward Plus")
 config/icon="res://icon.svg"
+
+[autoload]
+
+Test="*res://dev/scripts/autoexec/Test.cs"
 
 [dotnet]
 

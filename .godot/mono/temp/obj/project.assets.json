@@ -93,11 +93,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Program Files\\Godot\\Projects\\Quicksaver.csproj",
+      "projectUniqueName": "C:\\Github Repos\\Godot\\Quicksaver\\Quicksaver.csproj",
       "projectName": "Quicksaver",
-      "projectPath": "C:\\Program Files\\Godot\\Projects\\Quicksaver.csproj",
+      "projectPath": "C:\\Github Repos\\Godot\\Quicksaver\\Quicksaver.csproj",
       "packagesPath": "C:\\Users\\georg\\.nuget\\packages\\",
-      "outputPath": "C:\\Program Files\\Godot\\Projects\\.godot\\mono\\temp\\obj\\",
+      "outputPath": "C:\\Github Repos\\Godot\\Quicksaver\\.godot\\mono\\temp\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\georg\\AppData\\Roaming\\NuGet\\NuGet.Config"
