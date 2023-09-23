@@ -12,7 +12,7 @@ public static class SaveSystem
 	public static string MakeSave(Node rootNode)
 	{
 		LevelSaveData levelSaveData = new();
-		
+
 		foreach(GodotObject godotObject in ObtainAllObjects(rootNode))
 		{
 			NodeSaveData nodeSaveData = new();
@@ -69,29 +69,35 @@ public class NodeSaveData
 		declaringType = node.GetType().DeclaringType?.AssemblyQualifiedName ?? node.GetType().AssemblyQualifiedName;
 		baseType = typeof(Node).AssemblyQualifiedName;
 
+		Debug.Print($"\nNEW NODE {node.Name}");
 		GenerateSerializedInformation();
 
 		levelSaveData.hashNodePairs.Add(node.GetInstanceId(), this);
 
-		Debug.Print(" ");
-		foreach (KeyValuePair<string, List<string>> kvp in vals)
-		{
-			Debug.Print(kvp.Key);
-		}
+
 	}
 	
 	public void GenerateSerializedInformation()
 	{
-		foreach (KeyValuePair<string, object> kvp in GetValues())
+		try 
 		{
-			if (kvp.Value != null)
+			foreach (KeyValuePair<string, object> kvp in GetValues())
 			{
-				vals.Add(kvp.Key, new List<string>() {"test", JsonSerializer.Serialize(kvp.Value) });
+				Debug.Print($"	{kvp.Key} {kvp.Value} {kvp.Value.GetType()}");
+				if (kvp.Value != null)
+				{
+					vals.Add(kvp.Key, new List<string>() {"test", JsonSerializer.Serialize(kvp.Value) });
+				}
+				else
+				{
+					vals.Add(kvp.Key, new List<string>() {"test", null });
+				}
 			}
-			else
-			{
-				Debug.Print("kvp.value == null");
-			}
+		}
+		catch (Exception e)
+		{
+			// Debug.Print($"{kvp.Key} {kvp.Value} {kvp.Value.GetType()}");
+			Debug.Fail(e.Message);
 		}
 	}
 
@@ -103,10 +109,12 @@ public class NodeSaveData
 		{
 			foreach (MemberInfo member in GetMembers())
 			{
+
 				object memberValue = null;
 				if (member is PropertyInfo property) { memberValue = property.GetValue(node); }
 				else if (member is FieldInfo field) { memberValue = field.GetValue(node); }
 
+				// Debug.Print($"{member.Name} {memberValue}");
 				values.Add(member.Name, memberValue);
 			}
 		}
