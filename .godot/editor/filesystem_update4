@@ -1,4 +1,3 @@
-res://dev/levels/2ndScene.tscn
 res://dev/scripts/autoexec/Test.cs
 res://dev/scripts/FirstNode.cs
 res://dev/entities/Cube.tscn
