@@ -73,8 +73,6 @@ public class NodeSaveData
 		GenerateSerializedInformation();
 
 		levelSaveData.hashNodePairs.Add(node.GetInstanceId(), this);
-
-
 	}
 	
 	public void GenerateSerializedInformation()
@@ -140,6 +138,4 @@ public class NodeSaveData
 
 		return members;
 	}
-
-
 }
