@@ -103,7 +103,6 @@ public class NodeSaveData
 				}
 			}
 
-			node.ow
 		}
 		catch (Exception e)
 		{
