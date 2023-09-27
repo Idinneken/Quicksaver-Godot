@@ -1,156 +1,167 @@
-using System.Collections.Generic;
-using System.Linq;
-using Godot;
-using System.Text.Json.Serialization;
 using System;
-using System.Reflection;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
+using System.Reflection;
 using System.Text.Json;
+using System.Text.Json.Serialization;
+using Godot;
 
 public static class SaveSystem
 {
-	public static string MakeSave(Node rootNode)
-	{
-		LevelSaveData levelSaveData = new();
+    public static string MakeSave(Node rootNode)
+    {
+        LevelSaveData levelSaveData = new();
 
-		foreach(GodotObject godotObject in ObtainAllObjects(rootNode))
-		{
-			NodeSaveData nodeSaveData = new();
-			nodeSaveData.Initialise(levelSaveData, godotObject as Node);
-		}
-		
-		return JsonSerializer.Serialize(levelSaveData);
-	}
+        foreach (GodotObject godotObject in ObtainAllObjects(rootNode))
+        {
+            NodeSaveData nodeSaveData = new();
+            nodeSaveData.Initialize(levelSaveData, godotObject as Node);
+        }
 
-	public static void LoadSave()
-	{
+        return JsonSerializer.Serialize(levelSaveData);
+    }
 
-	}
+    public static void LoadSave()
+    {
+        // Implement load save logic
+    }
 
-	public static List<GodotObject> ObtainAllObjects(Node rootNode)
-	{
-		List<GodotObject> godotObjects = new();
-		GetChildNodesRecursively(rootNode, godotObjects);
-		return godotObjects;	
-	}
+    public static List<GodotObject> ObtainAllObjects(Node rootNode)
+    {
+        List<GodotObject> godotObjects = new();
+        GetChildNodesRecursively(rootNode, godotObjects);
+        return godotObjects;
+    }
 
-	private static void GetChildNodesRecursively(Node startingNode, List<GodotObject> output)
-	{
-		List<GodotObject> childNodes = startingNode.GetChildren().Cast<GodotObject>().ToList();
-		output.AddRange(childNodes);
+    private static void GetChildNodesRecursively(Node startingNode, List<GodotObject> output)
+    {
+        List<GodotObject> childNodes = startingNode.GetChildren().Cast<GodotObject>().ToList();
+        output.AddRange(childNodes);
 
-		foreach (Node childNode in childNodes)
-		{			
-			GetChildNodesRecursively(childNode, output);
-		}
-	}
+        foreach (Node childNode in childNodes)
+        {
+            GetChildNodesRecursively(childNode, output);
+        }
+    }
 }
 
 public class LevelSaveData
 {
-	public Dictionary<ulong, NodeSaveData> hashNodePairs = new();
+    public Dictionary<ulong, NodeSaveData> HashNodePairs = new();
 }
 
 public class NodeSaveData
 {
-	public string declaringType;
-	public string baseType;
-	public Dictionary<string, List<string>> vals = new();
-	public ulong owner;
+    public string declaringType;
+    public string baseType;
+    public ulong parentHash;
+    public ulong ownerHash;
 
-	[JsonIgnore] public LevelSaveData levelSaveData;
-	[JsonIgnore] public Node node;
+    [JsonIgnore] public LevelSaveData levelSaveData;
+    [JsonIgnore] public Node node;
+    [JsonIgnore] public Node parent;
 
-	public void Initialise(LevelSaveData levelSaveData, Node node)
-	{
-		this.levelSaveData = levelSaveData;
-		this.node = node;
-		owner = node.GetParent() != null ? node.GetParent().GetInstanceId() : 0;
-		declaringType = node.GetType().DeclaringType?.AssemblyQualifiedName ?? node.GetType().AssemblyQualifiedName;
-		baseType = typeof(Node).AssemblyQualifiedName;
+    public Dictionary<string, List<string>> Vals = new();
 
-		Debug.Print($"\nNEW NODE {node.Name}");
-		GenerateSerializedInformation();
+    public static Dictionary<Type, List<string>> specificallyIgnoredVariables = new()
+    {
+        {typeof(Node), new List<string> { "Owner", "NativePtr" }},
+        {typeof(Test), new List<string> { "Owner" }}
+    };
 
-		levelSaveData.hashNodePairs.Add(node.GetInstanceId(), this);
-	}
-	
-	public void GenerateSerializedInformation()
-	{
-		KeyValuePair<string, object> debugKvp = new();
+    public static List<Type> ignoredVariableTypes = new()
+    {
+        typeof(IntPtr), // IntPtr isn't liked by JsonSerializer
+    };
 
-		try 
-		{
-			foreach (KeyValuePair<string, object> kvp in GetValues())
-			{
-				debugKvp = kvp;
-				Debug.Print($"	{kvp.Key} {kvp.Value} {kvp.Value.GetType()}");
-				if (kvp.Value != null)
-				{
-					if (kvp.Value is IntPtr owner)
-					{
-						Debug.Print("IS INTPTR");
-						// vals.Add(kvp.Key, new List<string>() {"test", owner.GetInstanceId().ToString()  });
-					}
-					else
-					{
-						vals.Add(kvp.Key, new List<string>() {"test", JsonSerializer.Serialize(kvp.Value) });
-					}
-				}
-				else
-				{
-					vals.Add(kvp.Key, new List<string>() {"test", null });
-				}
-			}
+    public void Initialize(LevelSaveData levelSaveData, Node node)
+    {
+        declaringType = node.GetType().DeclaringType?.AssemblyQualifiedName ?? node.GetType().AssemblyQualifiedName;
+        baseType = typeof(Node).AssemblyQualifiedName;
+        parentHash = node.GetParent()?.GetInstanceId() ?? 0;
+        ownerHash = node.Owner?.GetInstanceId() ?? 0;
 
-		}
-		catch (Exception e)
-		{
-			Debug.Print($"FAILED WITH {debugKvp.Key} {debugKvp.Value} valueType:{debugKvp.Value?.GetType()} variable type on node: {node.GetType().GetProperty(debugKvp.Key)?.GetValue(node)?.GetType()}");
-			Debug.Fail(e.Message);
-			// You can access kvp.Key and kvp.Value here if needed
-			// kvp.Key and kvp.Value won't be available here directly, 
-			// but you can store them in variables before the try block if needed.
-		}
-	}
+        this.levelSaveData = levelSaveData;
+        this.node = node;
+		this.parent = node.GetParent();
 
-	public Dictionary<string, object> GetValues()
-	{
-		Dictionary<string, object> values = new();
+        Debug.Print($"\nNEW NODE {node.Name} \ndeclaringType: {declaringType} \nbaseType: {baseType}");
+        GenerateSerializedInformation();
+        Debug.Print($"vals.Count {Vals.Count}");
 
-		try 
-		{
-			foreach (MemberInfo member in GetMembers())
-			{
+        levelSaveData.HashNodePairs.Add(node.GetInstanceId(), this);
+    }
 
-				object memberValue = null;
-				if (member is PropertyInfo property) { memberValue = property.GetValue(node); }
-				else if (member is FieldInfo field) { memberValue = field.GetValue(node); }
+    public void GenerateSerializedInformation()
+    {
+        foreach (KeyValuePair<string, object> kvp in GetValues())
+        {
+            bool currentVariableIsIgnored = false;
 
-				// Debug.Print($"{member.Name} {memberValue}");
-				values.Add(member.Name, memberValue);
-			}
-		}
-		catch (Exception e)
-		{
-			Debug.Print(e.Message);
-		}
+            if (kvp.Value == null)
+            {
+                Debug.Print($"Adding '{kvp.Key}' as null to vals");
+                Vals.Add(kvp.Key, new List<string>() { "test", null });
+            }
+            else
+            {
+                // This code checks if a variable should be ignored based on its value's type,
+                // and whether the declaringType or baseType's listing contains the current variable.
+                // If so, it sets currentVariableIsIgnored to true.
 
-		return values;
-	}
+                if (ignoredVariableTypes.Contains(kvp.Value.GetType()) ||
+                    (specificallyIgnoredVariables.ContainsKey(Type.GetType(declaringType)) &&
+                     specificallyIgnoredVariables[Type.GetType(declaringType)].Contains(kvp.Key)) ||
+                    (specificallyIgnoredVariables.ContainsKey(Type.GetType(baseType)) &&
+                     specificallyIgnoredVariables[Type.GetType(baseType)].Contains(kvp.Key)))
+                {
+                    currentVariableIsIgnored = true;
+                }
 
-	public List<MemberInfo> GetMembers()
-	{
-		List<MemberInfo> members = new();
+                if (!currentVariableIsIgnored) // If the variable is not ignored
+                {
+                    if (kvp.Value is Node || kvp.Value.GetType().IsSubclassOf(typeof(Node)))
+                    {
+						Node variableNode = kvp.Value as Node;
+                        Debug.Print($"Adding the Node on variable '{kvp.Key}' as '{variableNode.GetInstanceId().ToString()}' to vals");
+                        Vals.Add(kvp.Key, new List<string>() { "test", variableNode.GetInstanceId().ToString() });
+                    }
+                    else
+                    {
+                        Debug.Print($"Adding '{kvp.Key}' '{kvp.Value}' to vals. It's a '{kvp.Value.GetType()}'");
+                        Vals.Add(kvp.Key, new List<string>() { "test", JsonSerializer.Serialize(kvp.Value) });
+                    }
+                }
+            }
+        }
+    }
 
-		const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public| BindingFlags.NonPublic;
+    public Dictionary<string, object> GetValues()
+    {
+        Dictionary<string, object> values = new();
 
-		members.AddRange(Type.GetType(declaringType).GetMembers(flags).Where(member =>
-            (member.MemberType == MemberTypes.Field || (member.MemberType == MemberTypes.Property &&    // Check if the member is a field or a property
-            ((PropertyInfo)member).GetSetMethod() != null)) &&                                          // Check (if it's a property), that it has a Set method
-            !member.IsDefined(typeof(ObsoleteAttribute), inherit: true)                                 // Ensure the field or property isn't obsolete
-            ));
+        foreach (MemberInfo member in GetMembers())
+        {
+            object memberValue = null;
+            if (member is PropertyInfo property) { memberValue = property.GetValue(node); }
+            else if (member is FieldInfo field) { memberValue = field.GetValue(node); }
 
-		return members;
-	}
+            values.Add(member.Name, memberValue);
+        }
+
+        return values;
+    }
+
+    public List<MemberInfo> GetMembers()
+    {
+        const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+
+        return Type.GetType(declaringType).GetMembers(flags)
+            .Where(member =>
+                (member.MemberType == MemberTypes.Field || (member.MemberType == MemberTypes.Property &&
+                ((PropertyInfo)member).GetSetMethod() != null)) &&
+                !member.IsDefined(typeof(ObsoleteAttribute), inherit: true))
+            .ToList();
+    }
 }

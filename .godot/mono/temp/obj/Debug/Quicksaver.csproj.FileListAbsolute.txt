@@ -49,3 +49,20 @@ C:\Github Repos\Godot\Quicksaver\.godot\mono\temp\obj\Debug\refint\Quicksaver.dl
 C:\Github Repos\Godot\Quicksaver\.godot\mono\temp\obj\Debug\Quicksaver.pdb
 C:\Github Repos\Godot\Quicksaver\.godot\mono\temp\obj\Debug\Quicksaver.genruntimeconfig.cache
 C:\Github Repos\Godot\Quicksaver\.godot\mono\temp\obj\Debug\ref\Quicksaver.dll
+M:\GitHub\Quicksaver-Godot\.godot\mono\temp\bin\Debug\Quicksaver.deps.json
+M:\GitHub\Quicksaver-Godot\.godot\mono\temp\bin\Debug\Quicksaver.runtimeconfig.json
+M:\GitHub\Quicksaver-Godot\.godot\mono\temp\bin\Debug\Quicksaver.dll
+M:\GitHub\Quicksaver-Godot\.godot\mono\temp\bin\Debug\Quicksaver.pdb
+M:\GitHub\Quicksaver-Godot\.godot\mono\temp\bin\Debug\GodotSharp.dll
+M:\GitHub\Quicksaver-Godot\.godot\mono\temp\bin\Debug\GodotSharpEditor.dll
+M:\GitHub\Quicksaver-Godot\.godot\mono\temp\obj\Debug\Quicksaver.csproj.AssemblyReference.cache
+M:\GitHub\Quicksaver-Godot\.godot\mono\temp\obj\Debug\Quicksaver.GeneratedMSBuildEditorConfig.editorconfig
+M:\GitHub\Quicksaver-Godot\.godot\mono\temp\obj\Debug\Quicksaver.AssemblyInfoInputs.cache
+M:\GitHub\Quicksaver-Godot\.godot\mono\temp\obj\Debug\Quicksaver.AssemblyInfo.cs
+M:\GitHub\Quicksaver-Godot\.godot\mono\temp\obj\Debug\Quicksaver.csproj.CoreCompileInputs.cache
+M:\GitHub\Quicksaver-Godot\.godot\mono\temp\obj\Debug\Quicksaver.csproj.CopyComplete
+M:\GitHub\Quicksaver-Godot\.godot\mono\temp\obj\Debug\Quicksaver.dll
+M:\GitHub\Quicksaver-Godot\.godot\mono\temp\obj\Debug\refint\Quicksaver.dll
+M:\GitHub\Quicksaver-Godot\.godot\mono\temp\obj\Debug\Quicksaver.pdb
+M:\GitHub\Quicksaver-Godot\.godot\mono\temp\obj\Debug\Quicksaver.genruntimeconfig.cache
+M:\GitHub\Quicksaver-Godot\.godot\mono\temp\obj\Debug\ref\Quicksaver.dll
