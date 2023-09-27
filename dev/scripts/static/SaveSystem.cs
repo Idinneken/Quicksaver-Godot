@@ -77,25 +77,41 @@ public class NodeSaveData
 	
 	public void GenerateSerializedInformation()
 	{
+		KeyValuePair<string, object> debugKvp = new();
+
 		try 
 		{
 			foreach (KeyValuePair<string, object> kvp in GetValues())
 			{
+				debugKvp = kvp;
 				Debug.Print($"	{kvp.Key} {kvp.Value} {kvp.Value.GetType()}");
 				if (kvp.Value != null)
 				{
-					vals.Add(kvp.Key, new List<string>() {"test", JsonSerializer.Serialize(kvp.Value) });
+					if (kvp.Value is IntPtr owner)
+					{
+						Debug.Print("IS INTPTR");
+						// vals.Add(kvp.Key, new List<string>() {"test", owner.GetInstanceId().ToString()  });
+					}
+					else
+					{
+						vals.Add(kvp.Key, new List<string>() {"test", JsonSerializer.Serialize(kvp.Value) });
+					}
 				}
 				else
 				{
 					vals.Add(kvp.Key, new List<string>() {"test", null });
 				}
 			}
+
+			node.ow
 		}
 		catch (Exception e)
 		{
-			// Debug.Print($"{kvp.Key} {kvp.Value} {kvp.Value.GetType()}");
+			Debug.Print($"FAILED WITH {debugKvp.Key} {debugKvp.Value} valueType:{debugKvp.Value?.GetType()} variable type on node: {node.GetType().GetProperty(debugKvp.Key)?.GetValue(node)?.GetType()}");
 			Debug.Fail(e.Message);
+			// You can access kvp.Key and kvp.Value here if needed
+			// kvp.Key and kvp.Value won't be available here directly, 
+			// but you can store them in variables before the try block if needed.
 		}
 	}
 
