@@ -6,6 +6,8 @@ public partial class Test : Node
 	[Export] 
 	public string saveString;
 
+	public bool printMessages;
+
 	public override void _Ready()
 	{
 		saveString = SaveSystem.MakeSave(GetTree().Root);

@@ -12,25 +12,18 @@ public static class SaveSystem
 {
     public static string MakeSave(Node rootNode)
     {
-        try
-        {
-            LevelSaveData levelSaveData = new LevelSaveData(rootNode);
+        LevelSaveData levelSaveData = new LevelSaveData(rootNode);
 
-            JsonSerializerOptions options = new JsonSerializerOptions
-            {
-                IncludeFields = true,
-                ReferenceHandler = ReferenceHandler.Preserve, // Use Preserve to handle circular references
-                WriteIndented = true, // Format the JSON for readability
-            };
-
-            Debug.Print(JsonSerializer.Serialize(levelSaveData, options));
-            return JsonSerializer.Serialize(levelSaveData, options);
-        }
-        catch (Exception e)
+        JsonSerializerOptions options = new JsonSerializerOptions
         {
-            Debug.Print(e.Message);
-            return "yuh";
-        }
+            IncludeFields = true,
+            WriteIndented = true, // Format the JSON for readability
+        };
+
+        Debug.Print(JsonSerializer.Serialize(levelSaveData, options));
+        Debug.Print(JsonSerializer.Serialize(levelSaveData, options).Compressed());
+        return JsonSerializer.Serialize(levelSaveData, options);
+        
     }
 
     public static void LoadSave()
@@ -85,7 +78,7 @@ public class NodeSaveData
     [JsonIgnore] public Node node;
     [JsonIgnore] public Node parent;
 
-    public Dictionary<string, List<string>> vals = new();
+    public Dictionary<string, string> vals = new();
 
     public NodeSaveData(LevelSaveData levelSaveData, Node node)
     {
@@ -114,27 +107,27 @@ public class NodeSaveData
 
             if (kvp.Value == null && !currentVariableTypeIsIgnored)
             {
-                Debug.Print($"NULL Adding '{kvp.Key}' as null");
-                vals.Add(kvp.Key, new List<string>() { "test", null });
+                // Debug.Print($"NULL Adding '{kvp.Key}' as null");
+                vals.Add(kvp.Key, "null");
             }
             else if (!currentVariableTypeIsIgnored && !currentVariableIsIgnored)
             {
                 if (kvp.Value is Resource variableResource)
                 {
-                    Debug.Print($"RESOURCE Adding '{kvp.Key}' as '{variableResource.GetInstanceId()}'");
-                    vals.Add(kvp.Key, new List<string>() { "R", variableResource.GetInstanceId().ToString() } );
+                    // Debug.Print($"RESOURCE Adding '{kvp.Key}' as '{variableResource.GetInstanceId()}'");
+                    vals.Add(kvp.Key, variableResource.GetInstanceId().ToString());
                     levelSaveData.resources.Add(variableResource);
                 }
                 else if (kvp.Value is Node)
                 {
+                    // Debug.Print($"NODE Adding '{kvp.Key}' as '{variableNode.GetInstanceId().ToString()}'");
                     Node variableNode = kvp.Value as Node;
-                    Debug.Print($"NODE Adding '{kvp.Key}' as '{variableNode.GetInstanceId().ToString()}'");
-                    vals.Add(kvp.Key, new List<string>() { "test", variableNode.GetInstanceId().ToString() });
+                    vals.Add(kvp.Key, variableNode.GetInstanceId().ToString());
                 }
                 else
                 {
-                    Debug.Print($"JSON Adding '{kvp.Key}' as '{JsonSerializer.Serialize(kvp.Value)}'. It's a '{kvp.Value.GetType()}'");
-                    vals.Add(kvp.Key, new List<string>() { "test", JsonSerializer.Serialize(kvp.Value) });
+                    // Debug.Print($"JSON Adding '{kvp.Key}' as '{JsonSerializer.Serialize(kvp.Value)}'. It's a '{kvp.Value.GetType()}'");
+                    vals.Add(kvp.Key, JsonSerializer.Serialize(kvp.Value));
                 }
             }
         }
@@ -178,7 +171,7 @@ public class ResourceSaveData
 {
     public string type;
     public string filePath;
-    public Dictionary<string, List<string>> vals = new();
+    public Dictionary<string, string> vals = new();
 
     [JsonIgnore] public LevelSaveData levelSaveData;
     [JsonIgnore] public Resource resource;
@@ -209,27 +202,27 @@ public class ResourceSaveData
 
             if (kvp.Value == null && !currentVariableTypeIsIgnored)
             {
-                Debug.Print($"NULL Adding '{kvp.Key}' as null");
-                vals.Add(kvp.Key, new List<string>() { "test", null });
+                // Debug.Print($"NULL Adding '{kvp.Key}' as null");
+                vals.Add(kvp.Key, "null");
             }
             else if (!currentVariableTypeIsIgnored && !currentVariableIsIgnored)
             {
                 if (kvp.Value is Resource variableResource)
                 {
-                    Debug.Print($"RESOURCE Adding '{kvp.Key}' as '{variableResource.GetInstanceId()}'");
-                    vals.Add(kvp.Key, new List<string>() { "R", variableResource.GetInstanceId().ToString() } );
+                    // Debug.Print($"RESOURCE Adding '{kvp.Key}' as '{variableResource.GetInstanceId()}'");
+                    vals.Add(kvp.Key, variableResource.GetInstanceId().ToString());
                     levelSaveData.resources.Add(variableResource);
                 }
                 else if (kvp.Value is Node)
                 {
+                    // Debug.Print($"NODE Adding '{kvp.Key}' as '{variableNode.GetInstanceId().ToString()}'");
                     Node variableNode = kvp.Value as Node;
-                    Debug.Print($"NODE Adding '{kvp.Key}' as '{variableNode.GetInstanceId().ToString()}'");
-                    vals.Add(kvp.Key, new List<string>() { "test", variableNode.GetInstanceId().ToString() });
+                    vals.Add(kvp.Key, variableNode.GetInstanceId().ToString());
                 }
                 else
                 {
-                    Debug.Print($"JSON Adding '{kvp.Key}' as '{JsonSerializer.Serialize(kvp.Value)}'. It's a '{kvp.Value.GetType()}'");
-                    vals.Add(kvp.Key, new List<string>() { "test", JsonSerializer.Serialize(kvp.Value) });
+                    // Debug.Print($"JSON Adding '{kvp.Key}' as '{JsonSerializer.Serialize(kvp.Value)}'. It's a '{kvp.Value.GetType()}'");
+                    vals.Add(kvp.Key, JsonSerializer.Serialize(kvp.Value));
                 }
             }
         }
