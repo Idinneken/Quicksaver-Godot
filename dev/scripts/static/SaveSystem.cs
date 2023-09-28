@@ -261,8 +261,8 @@ public class ResourceSaveData
             const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
             members = Type.GetType(type).GetMembers(flags)
                 .Where(member =>
-                    (member.MemberType == MemberTypes.Field || 
-                    (member.MemberType == MemberTypes.Property && ((PropertyInfo)member).GetSetMethod() != null)))
+                    member.MemberType == MemberTypes.Field || 
+                    (member.MemberType == MemberTypes.Property && ((PropertyInfo)member).GetSetMethod() != null))
                 .ToList();
 
             return members;
