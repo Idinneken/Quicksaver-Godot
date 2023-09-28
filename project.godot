@@ -26,3 +26,7 @@ project/assembly_name="Quicksaver"
 [filesystem]
 
 import/blender/blender3_path="\"C:\\Program Files\\Blender Foundation\\Blender 3.3\\blender.exe\""
+
+[network]
+
+limits/debugger/max_chars_per_second=262144

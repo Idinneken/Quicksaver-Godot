@@ -3,10 +3,12 @@ using System.Diagnostics;
 
 public partial class Test : Node
 {
+	[Export] 
+	public string saveString;
+
 	public override void _Ready()
 	{
-		Debug.Print(SaveSystem.MakeSave(GetTree().Root));
-		SaveSystem.MakeSave(GetTree().Root);
+		saveString = SaveSystem.MakeSave(GetTree().Root);
 
 		// foreach (GodotObject godotObject in SaveSystem.ObtainAllObjects(GetTree().Root))
 		// {
