@@ -1,6 +1,6 @@
 is_global = true
 build_property.GodotDisabledSourceGenerators = 
-build_property.GodotProjectDir = m:\GitHub\Quicksaver-Godot\
+build_property.GodotProjectDir = c:\Github Repos\Godot\Quicksaver\
 build_property.GodotProjectDirBase64 = 
 build_property.GodotSourceGenerators = 
 build_property.IsGodotToolsProject = 
@@ -10,7 +10,6 @@ build_property.UsingMicrosoftNETSdkWeb =
 build_property.ProjectTypeGuids = {8F3E2DF0-C35C-4265-82FC-BEA011F4A7ED};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}
 build_property.InvariantGlobalization = 
 build_property.PlatformNeutralAssembly = 
-build_property.EnforceExtendedAnalyzerRules = 
 build_property._SupportedPlatformList = Linux,macOS,Windows
 build_property.RootNamespace = Quicksaver
-build_property.ProjectDir = m:\GitHub\Quicksaver-Godot\
+build_property.ProjectDir = c:\Github Repos\Godot\Quicksaver\
