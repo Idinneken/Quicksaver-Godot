@@ -11,9 +11,22 @@ config_version=5
 [application]
 
 config/name="Quicksaver"
+run/main_scene="res://dev/levels/2ndScene.tscn"
 config/features=PackedStringArray("4.1", "C#", "Forward Plus")
 config/icon="res://icon.svg"
+
+[autoload]
+
+Test="*res://Dev/scripts/autoexec/Test.cs"
 
 [dotnet]
 
 project/assembly_name="Quicksaver"
+
+[filesystem]
+
+import/blender/blender3_path="\"C:\\Program Files\\Blender Foundation\\Blender 3.3\\blender.exe\""
+
+[network]
+
+limits/debugger/max_chars_per_second=262144
