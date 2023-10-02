@@ -1,5 +1,5 @@
-using Godot;
 using System.Diagnostics;
+using Godot;
 
 public partial class Test : Node
 {
@@ -10,12 +10,9 @@ public partial class Test : Node
 
 	public override void _Ready()
 	{
-		saveString = SaveSystem.MakeSave(GetTree().Root);
+		Debug.Print("hello");
 
-		// foreach (GodotObject godotObject in SaveSystem.ObtainAllObjects(GetTree().Root))
-		// {
-		// 	// Debug.Print(godotObject.);
-		// }
+		SaveSystem.LoadSave(SaveSystem.MakeSave(GetTree().Root));
 	}
 
 }

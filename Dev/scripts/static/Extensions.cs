@@ -58,5 +58,38 @@ namespace Extensions
                 return compressedString;
             }
         }
+
+        public static string Decompressed(this string input)
+        {
+            // Check for null or empty input
+            if (string.IsNullOrEmpty(input))
+            {
+                throw new ArgumentException("Input string cannot be null or empty.");
+            }
+
+            // Convert the Base64-encoded input string back to bytes
+            byte[] compressedBytes = Convert.FromBase64String(input);
+
+            using (MemoryStream memoryStream = new MemoryStream(compressedBytes))
+            {
+                using (MemoryStream decompressedStream = new MemoryStream())
+                {
+                    // Create a GZipStream to decompress the data
+                    using (GZipStream gzipStream = new GZipStream(memoryStream, CompressionMode.Decompress))
+                    {
+                        // Copy the decompressed data to the output stream
+                        gzipStream.CopyTo(decompressedStream);
+                    }
+
+                    // Convert the decompressed stream to a byte array
+                    byte[] decompressedBytes = decompressedStream.ToArray();
+
+                    // Convert the decompressed bytes to a string
+                    string decompressedString = Encoding.UTF8.GetString(decompressedBytes);
+
+                    return decompressedString;
+                }
+            }
+        }
     }
 }

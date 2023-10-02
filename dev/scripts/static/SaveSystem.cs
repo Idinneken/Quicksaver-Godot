@@ -26,9 +26,11 @@ public static class SaveSystem
         
     }
 
-    public static void LoadSave()
+    public static void LoadSave(string save, bool isCompressed = false)
     {
-        // Implement load save logic
+        LevelSaveData levelSaveData = isCompressed ? JsonSerializer.Deserialize<LevelSaveData>(save.Decompressed()) : JsonSerializer.Deserialize<LevelSaveData>(save);
+        levelSaveData.PopulateLevel();
+        
     }
 }
 
@@ -64,6 +66,35 @@ public class LevelSaveData
         {
             hashResourcePairs.Add(resource.GetInstanceId(), new ResourceSaveData(this, resource));
         }
+    }
+
+    public void PopulateLevel()
+    {
+        CreateNodes();
+        CreateResources();
+    }
+
+    public void CreateNodes()
+    {
+        foreach (KeyValuePair<ulong, NodeSaveData> kvp in hashNodePairs)
+        {
+            kvp.Value.ToNode(this);
+        }
+    }
+
+    public void CreateResources()
+    {
+        foreach (KeyValuePair<ulong, ResourceSaveData> kvp in hashResourcePairs)
+        {
+            kvp.Value.ToResource(this);
+        }
+    }
+
+    [JsonConstructor]
+    public LevelSaveData(Dictionary<ulong, NodeSaveData> hashNodePairs, Dictionary<ulong, ResourceSaveData> hashResourcePairs)
+    {
+        this.hashNodePairs = hashNodePairs;
+        this.hashResourcePairs = hashResourcePairs;
     }
 }
 
@@ -133,34 +164,121 @@ public class NodeSaveData
         }
     }
 
+    public void ToNode(LevelSaveData levelSaveData)
+    {
+        this.levelSaveData = levelSaveData;
+        node = new();
+
+        foreach (KeyValuePair<string, string> kvp in vals)
+        {
+            const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+
+            if (node.GetType().GetMember(kvp.Key, flags)[0] is MemberInfo member)
+            {
+                if (member is PropertyInfo property) 
+                { 
+                    if (property.GetType() == typeof(Node))
+                    {
+                        property.SetValue(node, this.levelSaveData.hashNodePairs[ulong.Parse(kvp.Value)]);
+                    }
+                    else if (property.GetType() == typeof(Resource))
+                    {
+                        property.SetValue(node, this.levelSaveData.hashResourcePairs[ulong.Parse(kvp.Value)]);
+                    }
+                    else 
+                    {
+                        property.SetValue(node, JsonSerializer.Deserialize(kvp.Value, property.GetType()));
+                    }
+
+                }
+                else if (member is FieldInfo field) 
+                {
+                    if (field.GetType() == typeof(Node))
+                    {
+                        field.SetValue(node, this.levelSaveData.hashNodePairs[ulong.Parse(kvp.Value)]);
+                    }
+                    else if (field.GetType() == typeof(Resource))
+                    {
+                        field.SetValue(node, this.levelSaveData.hashResourcePairs[ulong.Parse(kvp.Value)]);
+                    }
+                    else 
+                    {
+                        field.SetValue(node, JsonSerializer.Deserialize(kvp.Value, field.GetType()));
+                    }
+                }
+
+                // The member with the specified name exists in the type.
+                // You can perform actions related to 'member' here.
+            }
+        }
+    }
+
     #region GETTING
 
-    public Dictionary<string, object> GetValues()
+    private Dictionary<string, object> GetValues()
     {
         Dictionary<string, object> values = new();
 
-        foreach (MemberInfo member in GetMembers())
+        try 
         {
-            object memberValue = null;
-            if (member is PropertyInfo property) { memberValue = property.GetValue(node); }
-            else if (member is FieldInfo field) { memberValue = field.GetValue(node); }
+            foreach (MemberInfo member in GetMembers())
+            {
+                object memberValue = null;
+                if (member is PropertyInfo property) { memberValue = property.GetValue(node); }
+                else if (member is FieldInfo field) { memberValue = field.GetValue(node); }
 
-            values.Add(member.Name, memberValue);
+                values.Add(member.Name, memberValue);
+            }
         }
+        catch (Exception e)
+        {
+            Debug.Print(e.Message);
+        }
+        return values;
+    }
 
+    private Dictionary<string, object> GetValues(List<MemberInfo> members)
+    {
+        Dictionary<string, object> values = new();
+
+        try 
+        {
+            foreach (MemberInfo member in members)
+            {
+                object memberValue = null;
+                if (member is PropertyInfo property) { memberValue = property.GetValue(node); }
+                else if (member is FieldInfo field) { memberValue = field.GetValue(node); }
+
+                values.Add(member.Name, memberValue);
+            }
+        }
+        catch (Exception e)
+        {
+            Debug.Print(e.Message);
+        }
         return values;
     }
 
     public List<MemberInfo> GetMembers()
     {
-        const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+        List<MemberInfo> members = new();
 
-        return Type.GetType(type).GetMembers(flags)
-            .Where(member =>
-                (member.MemberType == MemberTypes.Field || (member.MemberType == MemberTypes.Property &&
-                ((PropertyInfo)member).GetSetMethod() != null)) &&
-                !member.IsDefined(typeof(ObsoleteAttribute), inherit: true))
-            .ToList();
+        try 
+        {
+            const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+            members = Type.GetType(type).GetMembers(flags)
+                .Where(member =>
+                    member.MemberType == MemberTypes.Field || 
+                    (member.MemberType == MemberTypes.Property && ((PropertyInfo)member).GetSetMethod() != null))
+                .ToList();
+
+            return members;
+        }
+        catch (Exception e)
+        {
+            Debug.Fail(e.Message);
+            return null;
+        }
     }
 
     #endregion
@@ -252,6 +370,28 @@ public class ResourceSaveData
         return values;
     }
 
+    private Dictionary<string, object> GetValues(List<MemberInfo> members)
+    {
+        Dictionary<string, object> values = new();
+
+        try 
+        {
+            foreach (MemberInfo member in members)
+            {
+                object memberValue = null;
+                if (member is PropertyInfo property) { memberValue = property.GetValue(resource); }
+                else if (member is FieldInfo field) { memberValue = field.GetValue(resource); }
+
+                values.Add(member.Name, memberValue);
+            }
+        }
+        catch (Exception e)
+        {
+            Debug.Print(e.Message);
+        }
+        return values;
+    }
+
     public List<MemberInfo> GetMembers()
     {
         List<MemberInfo> members = new();
@@ -272,6 +412,33 @@ public class ResourceSaveData
             Debug.Fail(e.Message);
             return null;
         }
+    }
+
+    public List<MemberInfo> GetMembers(List<string> memberNames)
+    {
+        List<MemberInfo> members = new();
+
+        try 
+        {
+            const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+            members = Type.GetType(type).GetMembers(flags)
+                .Where(member =>
+                    member.MemberType == MemberTypes.Field || 
+                    (member.MemberType == MemberTypes.Property && ((PropertyInfo)member).GetSetMethod() != null))
+                .ToList();
+
+            return members;
+        }
+        catch (Exception e)
+        {
+            Debug.Fail(e.Message);
+            return null;
+        }
+    }
+
+    internal void ToResource(LevelSaveData levelSaveData)
+    {
+        throw new NotImplementedException();
     }
 
     #endregion
