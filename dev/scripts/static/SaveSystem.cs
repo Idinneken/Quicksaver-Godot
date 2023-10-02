@@ -10,27 +10,27 @@ using Extensions;
 
 public static class SaveSystem
 {
-    public static string MakeSave(Node rootNode)
+    public static readonly JsonSerializerOptions options = new()
+    {
+        IncludeFields = true,
+        WriteIndented = true, // Format the JSON for readability
+    };
+    
+    public static string MakeSave(Node rootNode, bool returnCompressed = true)
     {
         LevelSaveData levelSaveData = new LevelSaveData(rootNode);
-
-        JsonSerializerOptions options = new JsonSerializerOptions
-        {
-            IncludeFields = true,
-            WriteIndented = true, // Format the JSON for readability
-        };
-
-        Debug.Print(JsonSerializer.Serialize(levelSaveData, options));
-        Debug.Print(JsonSerializer.Serialize(levelSaveData, options).Compressed());
         return JsonSerializer.Serialize(levelSaveData, options);
         
     }
 
-    public static void LoadSave(string save, bool isCompressed = false)
+    public static void LoadSave(string save, bool isCompressed = true)
     {
-        LevelSaveData levelSaveData = isCompressed ? JsonSerializer.Deserialize<LevelSaveData>(save.Decompressed()) : JsonSerializer.Deserialize<LevelSaveData>(save);
-        levelSaveData.PopulateLevel();
-        
+        LevelSaveData levelSaveData = isCompressed ? JsonSerializer.Deserialize<LevelSaveData>(save.Decompressed(), options) : JsonSerializer.Deserialize<LevelSaveData>(save, options);
+
+        Debug.Print(levelSaveData.hashNodePairs.Count.ToString());
+        Debug.Print("hello");
+
+        // levelSaveData.PopulateLevel();
     }
 }
 
@@ -43,6 +43,12 @@ public class LevelSaveData
     [JsonIgnore] public List<Node> nodes = new(); 
     [JsonIgnore] public List<Resource> resources = new(); 
 
+    [JsonConstructor]
+    public LevelSaveData(Dictionary<ulong, NodeSaveData> hashNodePairs, Dictionary<ulong, ResourceSaveData> hashResourcePairs) 
+    {
+        this.hashNodePairs = hashNodePairs; this.hashResourcePairs = hashResourcePairs;
+    }
+
     public LevelSaveData(Node rootNode)
     {
         nodes = rootNode.GetChildrenRecursive(true);
@@ -51,6 +57,13 @@ public class LevelSaveData
         // all the resources that need to be saved are obtained from the CreateNodeSavedata(nodes);
         CreateResourceSaveData(resources);
     }
+
+    // [JsonConstructor]
+    // public LevelSaveData(Dictionary<ulong, NodeSaveData> hashNodePairs, Dictionary<ulong, ResourceSaveData> hashResourcePairs)
+    // {
+    //     this.hashNodePairs = hashNodePairs;
+    //     this.hashResourcePairs = hashResourcePairs;
+    // }
 
     private void CreateNodeSavedata(List<Node> nodes)
     {
@@ -89,13 +102,6 @@ public class LevelSaveData
             kvp.Value.ToResource(this);
         }
     }
-
-    [JsonConstructor]
-    public LevelSaveData(Dictionary<ulong, NodeSaveData> hashNodePairs, Dictionary<ulong, ResourceSaveData> hashResourcePairs)
-    {
-        this.hashNodePairs = hashNodePairs;
-        this.hashResourcePairs = hashResourcePairs;
-    }
 }
 
 [Serializable]
@@ -111,6 +117,12 @@ public class NodeSaveData
 
     public Dictionary<string, string> vals = new();
 
+    [JsonConstructor]
+    public NodeSaveData(string type, ulong parentHash, ulong ownerHash) 
+    {
+        this.type = type; this.parentHash = parentHash; this.ownerHash = ownerHash;
+    }
+
     public NodeSaveData(LevelSaveData levelSaveData, Node node)
     {
         type = node.GetType().DeclaringType?.AssemblyQualifiedName ?? node.GetType().AssemblyQualifiedName;
@@ -121,10 +133,19 @@ public class NodeSaveData
         this.node = node;
 		this.parent = node.GetParent();
 
-        Debug.Print($"\nNEW NODE {node.Name} \ntype: {type}");
+        // Debug.Print($"\nNEW NODE {node.Name} \ntype: {type}");
         GenerateSerializedInformation();
-        Debug.Print($"vals.Count {vals.Count}");
+        // Debug.Print($"vals.Count {vals.Count}");
     }
+
+    // [JsonConstructor]
+    // public NodeSaveData(string type, ulong parentHash, ulong ownerHash,Dictionary<string, string> vals)
+    // {
+    //     this.type = type;
+    //     this.parentHash = parentHash;
+    //     this.ownerHash = ownerHash;
+    //     this.vals = vals;
+    // }
 
     public void GenerateSerializedInformation()
     {
@@ -206,9 +227,6 @@ public class NodeSaveData
                         field.SetValue(node, JsonSerializer.Deserialize(kvp.Value, field.GetType()));
                     }
                 }
-
-                // The member with the specified name exists in the type.
-                // You can perform actions related to 'member' here.
             }
         }
     }
@@ -222,28 +240,6 @@ public class NodeSaveData
         try 
         {
             foreach (MemberInfo member in GetMembers())
-            {
-                object memberValue = null;
-                if (member is PropertyInfo property) { memberValue = property.GetValue(node); }
-                else if (member is FieldInfo field) { memberValue = field.GetValue(node); }
-
-                values.Add(member.Name, memberValue);
-            }
-        }
-        catch (Exception e)
-        {
-            Debug.Print(e.Message);
-        }
-        return values;
-    }
-
-    private Dictionary<string, object> GetValues(List<MemberInfo> members)
-    {
-        Dictionary<string, object> values = new();
-
-        try 
-        {
-            foreach (MemberInfo member in members)
             {
                 object memberValue = null;
                 if (member is PropertyInfo property) { memberValue = property.GetValue(node); }
@@ -294,6 +290,12 @@ public class ResourceSaveData
     [JsonIgnore] public LevelSaveData levelSaveData;
     [JsonIgnore] public Resource resource;
 
+    [JsonConstructor]
+    public ResourceSaveData(string type, string filePath, Dictionary<string, string> vals) 
+    {
+        this.type = type; this.filePath = filePath; this.vals = vals;
+    }
+
     public ResourceSaveData(LevelSaveData levelSaveData, Resource resource)
     {
         type = resource.GetType().AssemblyQualifiedName;
@@ -302,10 +304,18 @@ public class ResourceSaveData
         this.levelSaveData = levelSaveData;
         this.resource = resource;
 
-        Debug.Print($"\nNEW RESOURCE {resource.ResourceName} \ntype: {type} \nfilepath: {filePath}");
+        // Debug.Print($"\nNEW RESOURCE {resource.ResourceName} \ntype: {type} \nfilepath: {filePath}");
         GenerateSerializedInformation();
-        Debug.Print($"vals.Count {vals.Count}");
+        // Debug.Print($"vals.Count {vals.Count}");
     }
+
+    // [JsonConstructor]
+    // public ResourceSaveData(string type, string filePath, Dictionary<string, string> vals)
+    // {
+    //     this.type = type;
+    //     this.filePath = filePath;
+    //     this.vals = vals;
+    // }
 
     public void GenerateSerializedInformation()
     {
@@ -370,28 +380,6 @@ public class ResourceSaveData
         return values;
     }
 
-    private Dictionary<string, object> GetValues(List<MemberInfo> members)
-    {
-        Dictionary<string, object> values = new();
-
-        try 
-        {
-            foreach (MemberInfo member in members)
-            {
-                object memberValue = null;
-                if (member is PropertyInfo property) { memberValue = property.GetValue(resource); }
-                else if (member is FieldInfo field) { memberValue = field.GetValue(resource); }
-
-                values.Add(member.Name, memberValue);
-            }
-        }
-        catch (Exception e)
-        {
-            Debug.Print(e.Message);
-        }
-        return values;
-    }
-
     public List<MemberInfo> GetMembers()
     {
         List<MemberInfo> members = new();
@@ -414,29 +402,7 @@ public class ResourceSaveData
         }
     }
 
-    public List<MemberInfo> GetMembers(List<string> memberNames)
-    {
-        List<MemberInfo> members = new();
-
-        try 
-        {
-            const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
-            members = Type.GetType(type).GetMembers(flags)
-                .Where(member =>
-                    member.MemberType == MemberTypes.Field || 
-                    (member.MemberType == MemberTypes.Property && ((PropertyInfo)member).GetSetMethod() != null))
-                .ToList();
-
-            return members;
-        }
-        catch (Exception e)
-        {
-            Debug.Fail(e.Message);
-            return null;
-        }
-    }
-
-    internal void ToResource(LevelSaveData levelSaveData)
+    public void ToResource(LevelSaveData levelSaveData)
     {
         throw new NotImplementedException();
     }

@@ -12,7 +12,13 @@ public partial class Test : Node
 	{
 		Debug.Print("hello");
 
-		SaveSystem.LoadSave(SaveSystem.MakeSave(GetTree().Root));
+		saveString = SaveSystem.MakeSave(GetTree().Root, false);
+
+		Debug.Print(saveString);
+
+		SaveSystem.LoadSave(saveString, false);
+
+		// SaveSystem.LoadSave(SaveSystem.MakeSave(GetTree().Root));
 	}
 
 }
