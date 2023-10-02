@@ -1,6 +1,7 @@
 using Godot;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Text;
@@ -90,6 +91,20 @@ namespace Extensions
                     return decompressedString;
                 }
             }
+        }
+    }
+
+    
+
+}
+
+public static class DebugPro
+{
+    public static void PrintIf(bool condition, string message)
+    {
+        if (condition)
+        {
+            Debug.Print(message);
         }
     }
 }

@@ -13,237 +13,188 @@ public static class SaveSystem
     public static readonly JsonSerializerOptions options = new()
     {
         IncludeFields = true,
-        WriteIndented = true, // Format the JSON for readability
+        WriteIndented = true, 
     };
     
     public static string MakeSave(Node rootNode, bool returnCompressed = true)
     {
-        LevelSaveData levelSaveData = new LevelSaveData(rootNode);
-        return JsonSerializer.Serialize(levelSaveData, options);
-        
+        string saveString = returnCompressed ? JsonSerializer.Serialize(new LevelSaveData(rootNode), options).Compressed() : JsonSerializer.Serialize(new LevelSaveData(rootNode), options);
+        return saveString;
     }
 
     public static void LoadSave(string save, bool isCompressed = true)
     {
         LevelSaveData levelSaveData = isCompressed ? JsonSerializer.Deserialize<LevelSaveData>(save.Decompressed(), options) : JsonSerializer.Deserialize<LevelSaveData>(save, options);
-
-        Debug.Print(levelSaveData.hashNodePairs.Count.ToString());
-        Debug.Print("hello");
-
-        // levelSaveData.PopulateLevel();
+        Debug.Print(levelSaveData.hashEntityDataPairs.Count.ToString());
     }
 }
 
 [Serializable]
 public class LevelSaveData
 {
-    public Dictionary<ulong, NodeSaveData> hashNodePairs = new();
-    public Dictionary<ulong, ResourceSaveData> hashResourcePairs = new();
+    public Dictionary<ulong, EntitySaveData> hashEntityDataPairs = new();
+    [JsonIgnore] public Dictionary<ulong, GodotObject> entities = new();
 
-    [JsonIgnore] public List<Node> nodes = new(); 
-    [JsonIgnore] public List<Resource> resources = new(); 
+    #region CONSTRUCTORS
 
     [JsonConstructor]
-    public LevelSaveData(Dictionary<ulong, NodeSaveData> hashNodePairs, Dictionary<ulong, ResourceSaveData> hashResourcePairs) 
+    public LevelSaveData(Dictionary<ulong, EntitySaveData> hashEntityDataPairs) 
     {
-        this.hashNodePairs = hashNodePairs; this.hashResourcePairs = hashResourcePairs;
+        this.hashEntityDataPairs = hashEntityDataPairs;
     }
 
     public LevelSaveData(Node rootNode)
     {
-        nodes = rootNode.GetChildrenRecursive(true);
-        CreateNodeSavedata(nodes);
-        
-        // all the resources that need to be saved are obtained from the CreateNodeSavedata(nodes);
-        CreateResourceSaveData(resources);
+        foreach (Node node in rootNode.GetChildrenRecursive(true))
+        {
+            entities.Add(node.GetInstanceId(), node);
+        }
+
+        Serialise();
     }
 
-    // [JsonConstructor]
-    // public LevelSaveData(Dictionary<ulong, NodeSaveData> hashNodePairs, Dictionary<ulong, ResourceSaveData> hashResourcePairs)
-    // {
-    //     this.hashNodePairs = hashNodePairs;
-    //     this.hashResourcePairs = hashResourcePairs;
-    // }
+    #endregion 
 
-    private void CreateNodeSavedata(List<Node> nodes)
+    #region SERIALISING
+
+    public void Serialise()
     {
-        foreach (Node node in nodes)
+        foreach (KeyValuePair<ulong, GodotObject> kvp in entities)
         {
-            hashNodePairs.Add(node.GetInstanceId(), new NodeSaveData(this, node));
+            EntitySaveData entitySaveData;
+            hashEntityDataPairs.Add(kvp.Key, entitySaveData = new EntitySaveData(this, kvp.Value));
+            entitySaveData.Serialise();
         }
     }
 
-    private void CreateResourceSaveData(List<Resource> resources)
+    #endregion
+
+    #region DESERIALISING
+
+    private void Deserialise()
     {
-        foreach (Resource resource in resources)
+        foreach (KeyValuePair<ulong, EntitySaveData> kvp in hashEntityDataPairs)
         {
-            hashResourcePairs.Add(resource.GetInstanceId(), new ResourceSaveData(this, resource));
+            kvp.Value.CreateBaseEntity();
+        }
+
+        foreach (KeyValuePair<ulong, EntitySaveData> kvp in hashEntityDataPairs)
+        {
+            kvp.Value.Deserialise();
         }
     }
 
-    public void PopulateLevel()
-    {
-        CreateNodes();
-        CreateResources();
-    }
-
-    public void CreateNodes()
-    {
-        foreach (KeyValuePair<ulong, NodeSaveData> kvp in hashNodePairs)
-        {
-            kvp.Value.ToNode(this);
-        }
-    }
-
-    public void CreateResources()
-    {
-        foreach (KeyValuePair<ulong, ResourceSaveData> kvp in hashResourcePairs)
-        {
-            kvp.Value.ToResource(this);
-        }
-    }
+    #endregion
 }
 
 [Serializable]
-public class NodeSaveData
+public class EntitySaveData
 {
     public string type;
-    public ulong parentHash;
-    public ulong ownerHash;
-
-    [JsonIgnore] public LevelSaveData levelSaveData;
-    [JsonIgnore] public Node node;
-    [JsonIgnore] public Node parent;
-
     public Dictionary<string, string> vals = new();
+    [JsonIgnore] public LevelSaveData levelSaveData;
+    [JsonIgnore] public GodotObject entity; 
+
+    #region CONSTRUCTORS
 
     [JsonConstructor]
-    public NodeSaveData(string type, ulong parentHash, ulong ownerHash) 
+    public EntitySaveData(string type, Dictionary<string, string> vals)
     {
-        this.type = type; this.parentHash = parentHash; this.ownerHash = ownerHash;
+        this.type = type; this.vals = vals;
     }
 
-    public NodeSaveData(LevelSaveData levelSaveData, Node node)
+    public EntitySaveData(LevelSaveData levelSaveData, GodotObject entity)
     {
-        type = node.GetType().DeclaringType?.AssemblyQualifiedName ?? node.GetType().AssemblyQualifiedName;
-        parentHash = node.GetParent()?.GetInstanceId() ?? 0;
-        ownerHash = node.Owner?.GetInstanceId() ?? 0;
-
-        this.levelSaveData = levelSaveData;
-        this.node = node;
-		this.parent = node.GetParent();
-
-        // Debug.Print($"\nNEW NODE {node.Name} \ntype: {type}");
-        GenerateSerializedInformation();
-        // Debug.Print($"vals.Count {vals.Count}");
+        this.levelSaveData = levelSaveData; this.entity = entity;
+        type = this.entity.GetType().DeclaringType?.AssemblyQualifiedName ?? this.entity.GetType().AssemblyQualifiedName;
     }
 
-    // [JsonConstructor]
-    // public NodeSaveData(string type, ulong parentHash, ulong ownerHash,Dictionary<string, string> vals)
-    // {
-    //     this.type = type;
-    //     this.parentHash = parentHash;
-    //     this.ownerHash = ownerHash;
-    //     this.vals = vals;
-    // }
+    #endregion
 
-    public void GenerateSerializedInformation()
+    #region SERIALISING
+
+    public void Serialise()
     {
+        DebugPro.PrintIf(SaveDataConfig.dev, $"\nNEW ENTITY type: {type}");
+
         foreach (KeyValuePair<string, object> kvp in GetValues())
         {
             bool currentVariableTypeIsIgnored = SaveDataConfig.ignoredVariableTypes.Contains(kvp.Value?.GetType());
-            bool currentVariableIsIgnored = 
-            (SaveDataConfig.ignoredVariables.ContainsKey(Type.GetType(type)) && 
-            SaveDataConfig.ignoredVariables[Type.GetType(type)].Contains(kvp.Key)) ||
-            (SaveDataConfig.ignoredVariables.ContainsKey(typeof(Node)) && SaveDataConfig.ignoredVariables[typeof(Node)].Contains(kvp.Key));
+            bool currentVariableIsIgnored =
+                (SaveDataConfig.ignoredVariables.ContainsKey(Type.GetType(type)) &&
+                SaveDataConfig.ignoredVariables[Type.GetType(type)].Contains(kvp.Key));
 
             if (kvp.Value == null && !currentVariableTypeIsIgnored)
             {
-                // Debug.Print($"NULL Adding '{kvp.Key}' as null");
+                DebugPro.PrintIf(SaveDataConfig.dev, $"NULL Adding '{kvp.Key}' as null");
                 vals.Add(kvp.Key, "null");
             }
             else if (!currentVariableTypeIsIgnored && !currentVariableIsIgnored)
             {
-                if (kvp.Value is Resource variableResource)
+                if (kvp.Value is GodotObject godotObject)
                 {
-                    // Debug.Print($"RESOURCE Adding '{kvp.Key}' as '{variableResource.GetInstanceId()}'");
-                    vals.Add(kvp.Key, variableResource.GetInstanceId().ToString());
-                    levelSaveData.resources.Add(variableResource);
-                }
-                else if (kvp.Value is Node)
-                {
-                    // Debug.Print($"NODE Adding '{kvp.Key}' as '{variableNode.GetInstanceId().ToString()}'");
-                    Node variableNode = kvp.Value as Node;
-                    vals.Add(kvp.Key, variableNode.GetInstanceId().ToString());
+                    DebugPro.PrintIf(SaveDataConfig.dev, $"GODOTOBJECT Adding '{kvp.Key}' as '{godotObject.GetInstanceId()}'");
+                    vals.Add(kvp.Key, $"{godotObject.GetInstanceId().ToString()} HASH");
+
+                    EntitySaveData variableEntitySaveData;
+                    if (levelSaveData.hashEntityDataPairs.TryAdd(godotObject.GetInstanceId(), variableEntitySaveData = new(levelSaveData, kvp.Value as GodotObject)))
+                    {
+                        variableEntitySaveData.Serialise();
+                        //If HashEntityDataPairs doesn't currently have a godotObject with that hash, it adds it and serialises
+                    }
                 }
                 else
                 {
-                    // Debug.Print($"JSON Adding '{kvp.Key}' as '{JsonSerializer.Serialize(kvp.Value)}'. It's a '{kvp.Value.GetType()}'");
+                    DebugPro.PrintIf(SaveDataConfig.dev, $"JSON Adding '{kvp.Key}' as '{JsonSerializer.Serialize(kvp.Value)}'. It's a '{kvp.Value.GetType()}'");
                     vals.Add(kvp.Key, JsonSerializer.Serialize(kvp.Value));
                 }
             }
         }
+
+        DebugPro.PrintIf(SaveDataConfig.dev, $"vals.Count {vals.Count}");
     }
 
-    public void ToNode(LevelSaveData levelSaveData)
+    #endregion
+
+    #region DESERIALISING 
+
+    public void CreateBaseEntity()
     {
-        this.levelSaveData = levelSaveData;
-        node = new();
+        // entity = Activator.CreateInstance(Type.GetType(type));
 
-        foreach (KeyValuePair<string, string> kvp in vals)
+        ulong entitySaveDataHash = 0; //Find the hash of 'this' within the levelSaveData, and use it for the entities dictionary
+        foreach (KeyValuePair<ulong, EntitySaveData> kvp in levelSaveData.hashEntityDataPairs)
         {
-            const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
-
-            if (node.GetType().GetMember(kvp.Key, flags)[0] is MemberInfo member)
+            if (kvp.Value == this)
             {
-                if (member is PropertyInfo property) 
-                { 
-                    if (property.GetType() == typeof(Node))
-                    {
-                        property.SetValue(node, this.levelSaveData.hashNodePairs[ulong.Parse(kvp.Value)]);
-                    }
-                    else if (property.GetType() == typeof(Resource))
-                    {
-                        property.SetValue(node, this.levelSaveData.hashResourcePairs[ulong.Parse(kvp.Value)]);
-                    }
-                    else 
-                    {
-                        property.SetValue(node, JsonSerializer.Deserialize(kvp.Value, property.GetType()));
-                    }
-
-                }
-                else if (member is FieldInfo field) 
-                {
-                    if (field.GetType() == typeof(Node))
-                    {
-                        field.SetValue(node, this.levelSaveData.hashNodePairs[ulong.Parse(kvp.Value)]);
-                    }
-                    else if (field.GetType() == typeof(Resource))
-                    {
-                        field.SetValue(node, this.levelSaveData.hashResourcePairs[ulong.Parse(kvp.Value)]);
-                    }
-                    else 
-                    {
-                        field.SetValue(node, JsonSerializer.Deserialize(kvp.Value, field.GetType()));
-                    }
-                }
+                entitySaveDataHash = kvp.Key;
             }
+            break;
         }
+
+        levelSaveData.entities.Add(entitySaveDataHash, entity);
     }
 
-    #region GETTING
+    public void Deserialise()
+    {
+        ApplyFields();
+    }
+
+    #endregion
+
+    #region GETTING FIELDS
 
     private Dictionary<string, object> GetValues()
     {
         Dictionary<string, object> values = new();
 
-        try 
+        try
         {
             foreach (MemberInfo member in GetMembers())
             {
                 object memberValue = null;
-                if (member is PropertyInfo property) { memberValue = property.GetValue(node); }
-                else if (member is FieldInfo field) { memberValue = field.GetValue(node); }
+                if (member is PropertyInfo property) { memberValue = property.GetValue(entity); }
+                else if (member is FieldInfo field) { memberValue = field.GetValue(entity); }
 
                 values.Add(member.Name, memberValue);
             }
@@ -259,12 +210,12 @@ public class NodeSaveData
     {
         List<MemberInfo> members = new();
 
-        try 
+        try
         {
             const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
-            members = Type.GetType(type).GetMembers(flags)
+            members = Type.GetType(type)?.GetMembers(flags)
                 .Where(member =>
-                    member.MemberType == MemberTypes.Field || 
+                    member.MemberType == MemberTypes.Field ||
                     (member.MemberType == MemberTypes.Property && ((PropertyInfo)member).GetSetMethod() != null))
                 .ToList();
 
@@ -278,133 +229,41 @@ public class NodeSaveData
     }
 
     #endregion
-}
 
-[Serializable]
-public class ResourceSaveData
-{
-    public string type;
-    public string filePath;
-    public Dictionary<string, string> vals = new();
+    #region SETTING FIELDS
 
-    [JsonIgnore] public LevelSaveData levelSaveData;
-    [JsonIgnore] public Resource resource;
-
-    [JsonConstructor]
-    public ResourceSaveData(string type, string filePath, Dictionary<string, string> vals) 
+    public void ApplyFields()
     {
-        this.type = type; this.filePath = filePath; this.vals = vals;
-    }
-
-    public ResourceSaveData(LevelSaveData levelSaveData, Resource resource)
-    {
-        type = resource.GetType().AssemblyQualifiedName;
-        filePath = resource.ResourcePath;
-
-        this.levelSaveData = levelSaveData;
-        this.resource = resource;
-
-        // Debug.Print($"\nNEW RESOURCE {resource.ResourceName} \ntype: {type} \nfilepath: {filePath}");
-        GenerateSerializedInformation();
-        // Debug.Print($"vals.Count {vals.Count}");
-    }
-
-    // [JsonConstructor]
-    // public ResourceSaveData(string type, string filePath, Dictionary<string, string> vals)
-    // {
-    //     this.type = type;
-    //     this.filePath = filePath;
-    //     this.vals = vals;
-    // }
-
-    public void GenerateSerializedInformation()
-    {
-        foreach (KeyValuePair<string, object> kvp in GetValues())
-        {
-            bool currentVariableTypeIsIgnored = SaveDataConfig.ignoredVariableTypes.Contains(kvp.Value?.GetType());
-            bool currentVariableIsIgnored = 
-            (SaveDataConfig.ignoredVariables.ContainsKey(Type.GetType(type)) && 
-            SaveDataConfig.ignoredVariables[Type.GetType(type)].Contains(kvp.Key)) ||
-            (SaveDataConfig.ignoredVariables.ContainsKey(Type.GetType(type)) && SaveDataConfig.ignoredVariables[Type.GetType(type)].Contains(kvp.Key));
-
-
-            if (kvp.Value == null && !currentVariableTypeIsIgnored)
-            {
-                // Debug.Print($"NULL Adding '{kvp.Key}' as null");
-                vals.Add(kvp.Key, "null");
-            }
-            else if (!currentVariableTypeIsIgnored && !currentVariableIsIgnored)
-            {
-                if (kvp.Value is Resource variableResource)
-                {
-                    // Debug.Print($"RESOURCE Adding '{kvp.Key}' as '{variableResource.GetInstanceId()}'");
-                    vals.Add(kvp.Key, variableResource.GetInstanceId().ToString());
-                    levelSaveData.resources.Add(variableResource);
-                }
-                else if (kvp.Value is Node)
-                {
-                    // Debug.Print($"NODE Adding '{kvp.Key}' as '{variableNode.GetInstanceId().ToString()}'");
-                    Node variableNode = kvp.Value as Node;
-                    vals.Add(kvp.Key, variableNode.GetInstanceId().ToString());
-                }
-                else
-                {
-                    // Debug.Print($"JSON Adding '{kvp.Key}' as '{JsonSerializer.Serialize(kvp.Value)}'. It's a '{kvp.Value.GetType()}'");
-                    vals.Add(kvp.Key, JsonSerializer.Serialize(kvp.Value));
-                }
-            }
-        }
-    }
-
-    #region GETTING
-
-    private Dictionary<string, object> GetValues()
-    {
-        Dictionary<string, object> values = new();
-
-        try 
-        {
-            foreach (MemberInfo member in GetMembers())
-            {
-                object memberValue = null;
-                if (member is PropertyInfo property) { memberValue = property.GetValue(resource); }
-                else if (member is FieldInfo field) { memberValue = field.GetValue(resource); }
-
-                values.Add(member.Name, memberValue);
-            }
-        }
-        catch (Exception e)
-        {
-            Debug.Print(e.Message);
-        }
-        return values;
-    }
-
-    public List<MemberInfo> GetMembers()
-    {
-        List<MemberInfo> members = new();
-
-        try 
+        foreach (KeyValuePair<string, string> kvp in vals)
         {
             const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
-            members = Type.GetType(type).GetMembers(flags)
-                .Where(member =>
-                    member.MemberType == MemberTypes.Field || 
-                    (member.MemberType == MemberTypes.Property && ((PropertyInfo)member).GetSetMethod() != null))
-                .ToList();
 
-            return members;
+            if (entity.GetType().GetMember(kvp.Key, flags)[0] is MemberInfo member)
+            {
+                if (member is PropertyInfo property)
+                {
+                    if (property.PropertyType.IsAssignableFrom(typeof(GodotObject)))
+                    {
+                        property.SetValue(entity, levelSaveData.hashEntityDataPairs[ulong.Parse(kvp.Value)]);
+                    }
+                    else
+                    {
+                        property.SetValue(entity, JsonSerializer.Deserialize(kvp.Value, property.PropertyType));
+                    }
+                }
+                else if (member is FieldInfo field)
+                {
+                    if (field.FieldType.IsAssignableFrom(typeof(GodotObject)))
+                    {
+                        field.SetValue(entity, levelSaveData.hashEntityDataPairs[ulong.Parse(kvp.Value)]);
+                    }
+                    else
+                    {
+                        field.SetValue(entity, JsonSerializer.Deserialize(kvp.Value, field.FieldType));
+                    }
+                }
+            }
         }
-        catch (Exception e)
-        {
-            Debug.Fail(e.Message);
-            return null;
-        }
-    }
-
-    public void ToResource(LevelSaveData levelSaveData)
-    {
-        throw new NotImplementedException();
     }
 
     #endregion
@@ -412,6 +271,8 @@ public class ResourceSaveData
 
 public static class SaveDataConfig
 {
+    public static bool dev = false;
+
     public static List<Type> ignoredVariableTypes = new()
     {
         typeof(IntPtr), // IntPtr isn't liked by JsonSerializer
