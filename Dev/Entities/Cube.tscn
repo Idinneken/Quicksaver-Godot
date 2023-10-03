@@ -1,8 +1,11 @@
-[gd_scene load_steps=2 format=3 uid="uid://xgwjg445iqt2"]
+[gd_scene load_steps=3 format=3 uid="uid://xgwjg445iqt2"]
+
+[ext_resource type="Script" path="res://Dev/scripts/DeleteOnPress.cs" id="1_whr14"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_dupve"]
 
 [node name="Node3D" type="Node3D"]
+script = ExtResource("1_whr14")
 
 [node name="CSGBox3D" type="CSGBox3D" parent="."]
 size = Vector3(3.69371, 1, 1)

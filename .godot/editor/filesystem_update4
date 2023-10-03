@@ -1,3 +1,5 @@
 res://Dev/levels/2ndScene.tscn
 res://Dev/scripts/autoexec/Test.cs
 res://Dev/scripts/FirstNode.cs
+res://Dev/Entities/Cube.tscn
+res://Dev/scripts/DeleteOnPress.cs
