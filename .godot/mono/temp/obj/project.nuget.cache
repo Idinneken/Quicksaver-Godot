@@ -1,12 +1,12 @@
 {
   "version": 2,
-  "dgSpecHash": "io8qV32q7iIpNsRfYM9dYN7ZKZcNjGE9xzLLAVinziLLJTHYqspW/SelwzIsdJ/oLwdMra1p5XvWhsSL5NnGTA==",
+  "dgSpecHash": "Rg5mSADjmHEt2aQ360jisiBVv4FSGCd6I8KwO4iqk5nR32R3yt35czs9wvaaPiEoMLncEcFiunSDJiGauSnliQ==",
   "success": true,
-  "projectFilePath": "M:\\GitHub\\Quicksaver-Godot\\Quicksaver.csproj",
+  "projectFilePath": "C:\\Github Repos\\Godot\\Quicksaver\\Quicksaver.csproj",
   "expectedPackageFiles": [
-    "C:\\Users\\2003314\\.nuget\\packages\\godot.sourcegenerators\\4.1.1\\godot.sourcegenerators.4.1.1.nupkg.sha512",
-    "C:\\Users\\2003314\\.nuget\\packages\\godotsharp\\4.1.1\\godotsharp.4.1.1.nupkg.sha512",
-    "C:\\Users\\2003314\\.nuget\\packages\\godotsharpeditor\\4.1.1\\godotsharpeditor.4.1.1.nupkg.sha512"
+    "C:\\Users\\georg\\.nuget\\packages\\godot.sourcegenerators\\4.1.1\\godot.sourcegenerators.4.1.1.nupkg.sha512",
+    "C:\\Users\\georg\\.nuget\\packages\\godotsharp\\4.1.1\\godotsharp.4.1.1.nupkg.sha512",
+    "C:\\Users\\georg\\.nuget\\packages\\godotsharpeditor\\4.1.1\\godotsharpeditor.4.1.1.nupkg.sha512"
   ],
   "logs": []
 }

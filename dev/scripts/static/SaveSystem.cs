@@ -7,6 +7,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Godot;
 using Extensions;
+using System.Net;
 
 public static class SaveSystem
 {
@@ -31,39 +32,6 @@ public static class SaveSystem
 		levelSaveData.Deserialise();
 	}
 
-	public static void NewMakeSave(Node rootNode)
-	{
-		Node currentScene = rootNode.GetTree().CurrentScene;
-
-        if (currentScene != null)
-        {
-            PackedScene packedScene = new PackedScene();
-            packedScene.Pack(currentScene);
-
-            // Save the PackedScene to a file
-            Error result = packedScene.Pack(rootNode);
-
-            if (result == Error.Ok)
-            {
-                GD.Print("Scene saved successfully.");
-				Error error = ResourceSaver.Save(packedScene, saveFilePath);
-				if (error != Error.Ok)
-				{
-					GD.PushError("An error occured while savin the scene to disk");
-				}
-            }
-        }
-        else
-        {
-            GD.Print("No current scene to save.");
-        }
-	}
-
-	public static void LoadSavedScene(Node rootNode)
-    {
-		rootNode.AddChild(ResourceLoader.Load<PackedScene>(saveFilePath).Instantiate());
-		
-    }
 }
 
 [Serializable]
@@ -110,11 +78,6 @@ public class LevelSaveData
 
 	public void Deserialise()
 	{
-		// foreach (KeyValuePair<ulong, EntitySaveData> kvp in hashEntityDataPairs)
-		// {
-		// 	Debug.Print($"{kvp.Key.ToString()} {kvp.Value.ToString()}");
-		// }
-	
 		foreach (KeyValuePair<ulong, EntitySaveData> kvp in hashEntityDataPairs)
 		{
 			kvp.Value.CreateBaseEntity(this);
@@ -164,12 +127,12 @@ public class EntitySaveData
 	{
 		DebugPro.PrintIf(SaveDataConfig.dev, $"\nNEW ENTITY type: {type}");
 
-		foreach (KeyValuePair<string, object> kvp in GetValues())
+		foreach (var kvp in GetValues())
 		{
 			bool currentVariableTypeIsIgnored = SaveDataConfig.ignoredVariableTypes.Contains(kvp.Value?.GetType());
 			bool currentVariableIsIgnored =
-				(SaveDataConfig.ignoredVariables.ContainsKey(Type.GetType(type)) &&
-				SaveDataConfig.ignoredVariables[Type.GetType(type)].Contains(kvp.Key));
+				SaveDataConfig.ignoredVariables.ContainsKey(Type.GetType(type)) 
+				&& SaveDataConfig.ignoredVariables[Type.GetType(type)].Contains(kvp.Key);
 
 			if (kvp.Value == null && !currentVariableTypeIsIgnored)
 			{
@@ -211,7 +174,7 @@ public class EntitySaveData
 
 		ulong entitySaveDataHash = 0; //Find the hash of 'this' within the levelSaveData, and use it for the entities dictionary
 		bool wasFound = false;
-		foreach (KeyValuePair<ulong, EntitySaveData> kvp in levelSaveData.hashEntityDataPairs)
+		foreach (var kvp in levelSaveData.hashEntityDataPairs)
 		{
 			if (wasFound == false && kvp.Value == this) 
 			{ 
@@ -282,62 +245,87 @@ public class EntitySaveData
 
 	public void ApplyFields()
 	{
-		foreach (KeyValuePair<string, string> kvp in vals)
+		foreach (var kvp in vals)
 		{
-			const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+			Variant entityVar = entity._Get(kvp.Key);
 
-			if (entity.GetType().GetMember(kvp.Key, flags)[0] is MemberInfo member)
+
+			EntitySaveData entitySaveData;
+			if (ulong.TryParse(kvp.Value, out ulong hash) && levelSaveData.hashEntityDataPairs.TryGetValue(hash, out entitySaveData))
 			{
-				EntitySaveData entitySaveData;
-				if (member is PropertyInfo property)
+				if (entitySaveData.entity.GetType().IsAssignableTo(property.PropertyType))
 				{
-					if (ulong.TryParse(kvp.Value, out ulong hash) && levelSaveData.hashEntityDataPairs.TryGetValue(hash, out entitySaveData))
-					{
-						Debug.Print($"{type} {kvp.Key} {kvp.Value} isAssignableTo {entitySaveData.entity.GetType().IsAssignableTo(property.PropertyType)}");
-						if (entitySaveData.entity.GetType().IsAssignableTo(property.PropertyType))
-						{
-							property.SetValue(entity, entitySaveData.entity);
-						}
-						else
-						{
-							try { property.SetValue(entity, JsonSerializer.Deserialize(kvp.Value, property.PropertyType));}
-							catch (JsonException ex) { Debug.Fail($"PROP 1 {ex.Message}"); }
-							catch (Exception ex) { Debug.Fail($"PROP 2 {ex.Message}"); }
-						}
-					}
-					else
-					{
-						Debug.Print($"{type} {kvp.Key} {kvp.Value} isAssignableTo N/A");
-						try { property.SetValue(entity, JsonSerializer.Deserialize(kvp.Value, property.PropertyType));}
-						catch (JsonException ex) { Debug.Fail($"PROP 3 {ex.Message}"); }
-						catch (Exception ex) { Debug.Fail($"PROP 4 {ex.Message}"); }
-					}
+					property.SetValue(entity, entitySaveData.entity);
 				}
-				else if (member is FieldInfo field)
+				else
 				{
-					if (ulong.TryParse(kvp.Value, out ulong hash) && levelSaveData.hashEntityDataPairs.TryGetValue(hash, out entitySaveData))
-					{
-						Debug.Print($"{type} {kvp.Key} {kvp.Value} isAssignableTo {entitySaveData.entity.GetType().IsAssignableTo(field.FieldType)}");
-						if (entitySaveData.entity.GetType().IsAssignableTo(field.FieldType))
-						{
-							field.SetValue(entity, entitySaveData.entity);
-						}
-						else
-						{
-							try { field.SetValue(entity, JsonSerializer.Deserialize(kvp.Value, field.FieldType));}
-							catch (JsonException ex) { Debug.Fail($"FIELD 1 {ex.Message}"); }
-							catch (Exception ex) { Debug.Fail($"FIELD 2 {ex.Message}"); }
-						}
-					}
-					else
-					{
-						Debug.Print($"{type} {kvp.Key} {kvp.Value} isAssignableTo N/A");
-						try { field.SetValue(entity, JsonSerializer.Deserialize(kvp.Value, field.FieldType));}
-						catch (JsonException ex) { Debug.Fail($"FIELD 3 {ex.Message}"); }
-						catch (Exception ex) { Debug.Fail($"FIELD 4 {ex.Message}"); }
-					}
+					try { property.SetValue(entity, JsonSerializer.Deserialize(kvp.Value, property.PropertyType));}
+					catch (JsonException ex) { Debug.Fail($"PROP 1 {ex.Message}"); }
+					catch (Exception ex) { Debug.Fail($"PROP 2 {ex.Message}"); }
 				}
 			}
+			else
+			{
+				Debug.Print($"{type} {kvp.Key} {kvp.Value} isAssignableTo N/A");
+				try { property.SetValue(entity, JsonSerializer.Deserialize(kvp.Value, property.PropertyType));}
+				catch (JsonException ex) { Debug.Fail($"PROP 3 {ex.Message}"); }
+				catch (Exception ex) { Debug.Fail($"PROP 4 {ex.Message}"); }
+			}
+	
+			// const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+
+			// if (entity.GetType().GetMember(kvp.Key, flags)[0] is MemberInfo member)
+			// {
+			// 	EntitySaveData entitySaveData;
+			// 	if (member is PropertyInfo property)
+			// 	{
+			// 		if (ulong.TryParse(kvp.Value, out ulong hash) && levelSaveData.hashEntityDataPairs.TryGetValue(hash, out entitySaveData))
+			// 		{
+			// 			Debug.Print($"{type} {kvp.Key} {kvp.Value} isAssignableTo {entitySaveData.entity.GetType().IsAssignableTo(property.PropertyType)}");
+			// 			if (entitySaveData.entity.GetType().IsAssignableTo(property.PropertyType))
+			// 			{
+			// 				property.SetValue(entity, entitySaveData.entity);
+			// 			}
+			// 			else
+			// 			{
+			// 				try { property.SetValue(entity, JsonSerializer.Deserialize(kvp.Value, property.PropertyType));}
+			// 				catch (JsonException ex) { Debug.Fail($"PROP 1 {ex.Message}"); }
+			// 				catch (Exception ex) { Debug.Fail($"PROP 2 {ex.Message}"); }
+			// 			}
+			// 		}
+			// 		else
+			// 		{
+			// 			Debug.Print($"{type} {kvp.Key} {kvp.Value} isAssignableTo N/A");
+			// 			try { property.SetValue(entity, JsonSerializer.Deserialize(kvp.Value, property.PropertyType));}
+			// 			catch (JsonException ex) { Debug.Fail($"PROP 3 {ex.Message}"); }
+			// 			catch (Exception ex) { Debug.Fail($"PROP 4 {ex.Message}"); }
+			// 		}
+			// 	}
+			// 	else if (member is FieldInfo field)
+			// 	{
+			// 		if (ulong.TryParse(kvp.Value, out ulong hash) && levelSaveData.hashEntityDataPairs.TryGetValue(hash, out entitySaveData))
+			// 		{
+			// 			Debug.Print($"{type} {kvp.Key} {kvp.Value} isAssignableTo {entitySaveData.entity.GetType().IsAssignableTo(field.FieldType)}");
+			// 			if (entitySaveData.entity.GetType().IsAssignableTo(field.FieldType))
+			// 			{
+			// 				field.SetValue(entity, entitySaveData.entity);
+			// 			}
+			// 			else
+			// 			{
+			// 				try { field.SetValue(entity, JsonSerializer.Deserialize(kvp.Value, field.FieldType));}
+			// 				catch (JsonException ex) { Debug.Fail($"FIELD 1 {ex.Message}"); }
+			// 				catch (Exception ex) { Debug.Fail($"FIELD 2 {ex.Message}"); }
+			// 			}
+			// 		}
+			// 		else
+			// 		{
+			// 			Debug.Print($"{type} {kvp.Key} {kvp.Value} isAssignableTo N/A");
+			// 			try { field.SetValue(entity, JsonSerializer.Deserialize(kvp.Value, field.FieldType));}
+			// 			catch (JsonException ex) { Debug.Fail($"FIELD 3 {ex.Message}"); }
+			// 			catch (Exception ex) { Debug.Fail($"FIELD 4 {ex.Message}"); }
+			// 		}
+			// 	}
+			// }
 		}
 	}
 

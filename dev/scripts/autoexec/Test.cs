@@ -23,7 +23,10 @@ public partial class Test : Node
 
 		GD.Print(GetTree().Root);
 		
-		SaveSystem.NewMakeSave(GetTree().Root);
+		saveString = SaveSystem.MakeSave(GetTree().Root);
+
+		SaveSystem.LoadSave(saveString);
+
 	}
 
     public override void _Process(double delta)
@@ -31,8 +34,8 @@ public partial class Test : Node
 		if (Input.IsActionJustPressed("ui_accept"))
         {
             // Handle key press
-            GD.Print("UIAccept key pressed");
-			SaveSystem.LoadSavedScene(GetTree().Root);
+            // GD.Print("UIAccept key pressed");
+			// SaveSystem.LoadSavedScene(GetTree().Root);
         }
     }
 
